@@ -77,8 +77,6 @@ The forecast model is then summarized in the `FAST-cm.Rmd` which selects and fit
     b.  Add the samples
     c.  add the exceedence / threshold probabilities for `cm`.
 
->>>>>>> fbc13335d0e71ab15e6124f40e9cb4d2f6123762
-
 ## Acknowledgments
 
 - Support has been provided by [NSF Award 2311142](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2311142).  Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
