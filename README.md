@@ -23,6 +23,10 @@ This repo develops the training-test-dev for the `cm` models.  It shows
     b.  Add the samples
     c.  add the exceedence / threshold probabilities for `cm`.
 
+You will need to execute the files in this repo to be able to fully generate the forecasts in the last step.  
+Overall, the interim steps generate over 2GB of simulated forecasts and data subsets of for the training and evaluation steps.  
+These are then summarized in the `FAST-cm.Rmd` which selects and fits the final production model.
+
 ## Acknowledgments
 
 - Support has been provided by [NSF Award 2311142](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2311142).  Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
