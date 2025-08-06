@@ -13,6 +13,12 @@ This repo develops the training-test-dev for the `cm` models.  It shows
 2.  The final models chosen and their interpretations
 3.  How the forecast results can be summarized by country, quantiles, and time periods.
 
+## Basic setup for the analysis here
+
+1.  Run the startup repo to get the data.  That is all documented [here.](https://github.com/PTB-OEDA/VIEWS-Startup). This gets you all the data downloaded and setup for analysis.
+2.  Execute the `batch.sh` script to run the additional data prep, training, dev and validation models.  This is all inputs for the final model selection and presentation.
+3.  Model comparison and selection is summarized in `FAST-cm.*` related files, which are here in all the favorite flavors (`Rmd` for code, and `pdf` / `html` / `md`)
+4.  Results and forecast summaries are in the files ...
 
 ## Acknowledgments
 

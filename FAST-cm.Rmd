@@ -6,12 +6,12 @@ html-math-method:
   method: mathjax
   url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: '2'
   github_document:
     toc: true
     toc_depth: 2
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
   html_document:
     toc: yes
     toc_float: yes
