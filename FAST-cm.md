@@ -13,6 +13,9 @@ August 06, 2025
   covariates](#selected-model-negative-binomial-glmm-with-covariates)
 - [Predictions](#predictions)
 - [Forecast Summaries](#forecast-summaries)
+- [Generate the cumulative forecast count
+  distributions](#generate-the-cumulative-forecast-count-distributions)
+- [Write out some results](#write-out-some-results)
 - [Characterization of cumulative
   forecasts](#characterization-of-cumulative-forecasts)
 - [Appendix](#appendix)
@@ -274,13 +277,14 @@ NBGLMM</figcaption>
 
 Same as above, but with accounting for the random effects – smaller
 effects and possibly messier to interpret, but more realistic of the
-decision-maker’s pattern.
+decision-maker’s problem.
 
 ``` r
 plot(estimate_slopes(FAST.cm, 
                      trend = "wdi_sp_dyn_imrt_in",
                      by = "month_factor = seq(480, 540)", 
-                     predict = "conditional"))
+                     predict = "conditional"), 
+     main = "Infant Mortaility effects over time")
 ```
 
 ![](FAST-cm_files/figure-gfm/timed_effects-1.png)<!-- -->
@@ -289,7 +293,8 @@ plot(estimate_slopes(FAST.cm,
 plot(estimate_slopes(FAST.cm, 
                      trend = "wdi_ms_mil_xpnd_gd_zs",
                      by = "month_factor = seq(480, 540)", 
-                     predict = "conditional"))
+                     predict = "conditional"), 
+     main = "mil_xpnd_gd_zs effects over time")
 ```
 
 ![](FAST-cm_files/figure-gfm/timed_effects-2.png)<!-- -->
@@ -298,7 +303,8 @@ plot(estimate_slopes(FAST.cm,
 plot(estimate_slopes(FAST.cm, 
                      trend = "vdem_v2x_ex_military", 
                      by = "month_factor = seq(480, 540)", 
-                     predict = "conditional"))
+                     predict = "conditional"), 
+     main = "VDEM Mil. Exp. effects over time")
 ```
 
 ![](FAST-cm_files/figure-gfm/timed_effects-3.png)<!-- -->
@@ -306,17 +312,13 @@ plot(estimate_slopes(FAST.cm,
 ## Predictions
 
 ``` r
+# Loads a function for predictions from GLMMs
 source("predictglmm.R")
 
 ds <- FAST.cm$frame
 
 # Get last 12 months of data
-dim(ds[as.numeric(ds$month_factor)>(max(as.numeric(ds$month_factor))-12),])
-```
-
-    ## [1] 2292    7
-
-``` r
+#dim(ds[as.numeric(ds$month_factor)>(max(as.numeric(ds$month_factor))-12),])
 xforcs <- ds[as.numeric(ds$month_factor)>(max(as.numeric(ds$month_factor))-12),]
 
 # Set the month_factor variable and then the covariates by country to match
@@ -333,6 +335,8 @@ xout <- merge(idxs, xnew, by="country_id")
 xout$month_factor <- as.factor(xout$month_id)
 xout$ged_sb <- NA
 
+
+# Generate the predictions with function loaded earlier
 set.seed(324)
 forcs <- predictglmm(FAST.cm, newdata = xout, N=1000)
 ```
@@ -345,37 +349,77 @@ forecast sample (`N=1000`).
 ``` r
 # Get country labels for any formatting below -- use latest
 countrylabels <- globe[globe$month_id==max(globe$month_id),
-                       c("country_id", "name", "isoname", "isoab", "isonum", "gwcode")]
+                       c("country_id", "name", "isoname",
+                         "isoab", "isonum", "gwcode")]
 
-# Mean Forecast for each country-month
+# Mean forecast for each country-month
 mean.forcs <- forcs %>% group_by(country_id, month_id) %>% 
   summarise(total = mean(predicted))
-```
 
-    ## `summarise()` has grouped output by 'country_id'. You can override using the
-    ## `.groups` argument.
-
-``` r
 # Add labels to mean forecasts
-mean.forcs <- merge(mean.forcs, countrylabels[,c(1,2,4)], by="country_id")
+mean.forcs <- merge(mean.forcs, countrylabels[,c(1,2,4)],
+                    by="country_id")
 names(mean.forcs)[3] <- "predicted"
 
 # Add dates to mean forecasts
 forc.idx <- data.frame(month_id = 550:561, 
-                       dates=seq(as.Date("2025-10-01"), by="month", length=12))
+                       dates=seq(as.Date("2025-10-01"),
+                                 by="month", length=12))
 
+# Merge so things have correct labels
 mean.forcs <- merge(mean.forcs, forc.idx, by="month_id")
 
 # Generate cumulative mean forecasts for each country 
-# over the 12 months of performance
+# over the 12 months of performance.
+#
+# Remember this work since the mean of the sum is the sum
+# of the means
 
 cum.mean.forcs <-  mean.forcs %>% group_by(country_id) %>% 
-  mutate(cumulative_predicted = cumsum(predicted)) %>% arrange(country_id, month_id)
+  mutate(cumulative_predicted = cumsum(predicted)) %>%
+  arrange(country_id, month_id)
+```
 
-# Write the results out into a spreadsheet
+## Generate the cumulative forecast count distributions
+
+This is a bit trickier than the totaling of the cumulative means. The
+target prediction here is whether of not there are more than 25 deaths
+(so predicting when a cumulant of `ged_sb` \> 25) in a target period.
+
+There is a “right” and a “wrong” way to do this computation and it
+matters since the probability of the cumulative event is not the
+cumulative of the probability of the event. So one needs to take some
+care in this computation when considering it in a model and for a sample
+of forecasts. (It is a classic case of wanting an expectation of a
+relevant function not a function of the expectation.)
+
+``` r
+tmp <- forcs %>% group_by(country_id, month_id, sample_id) %>% summarise(cp = cumsum(predicted)>25) 
+
+pover25 <- tmp %>% group_by(country_id, month_id) %>%
+  summarise(mean(cp))
+
+pover25 <- merge(pover25, countrylabels[,c(1,2,4)],
+                 by="country_id")
+pover25 <- merge(pover25, forc.idx, by="month_id")
+names(pover25)[3] <- "Pr(Cum>25)"
+rm(tmp)
+```
+
+## Write out some results
+
+``` r
+# Merge the mean, cumulative mean, and Pr(Cumulative>25)
+out <- merge(as.data.frame(cum.mean.forcs),
+             pover25[,1:3], by = c("country_id", "month_id"))
+
+# Write the summary results out into a spreadsheet
 library(writexl)
-write_xlsx(x = list("Forecasts" = cum.mean.forcs),
+write_xlsx(x = list("Forecasts" = out),
            path = "FAST-cm-Forecasts.xlsx")
+
+# Save the forecast sample
+save(forcs, file = "ForecastSample.RData")
 ```
 
 ## Characterization of cumulative forecasts
