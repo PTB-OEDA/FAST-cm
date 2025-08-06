@@ -52,31 +52,6 @@ The forecast model is then summarized in the `FAST-cm.Rmd` which selects and fit
 One needs to execute the files in this repo to be able to fully generate the forecasts in the last step.  
 Overall, the interim steps generate over 2GB of simulated forecasts and data subsets of for the training and evaluation steps.  
 
-## Training and Validation Steps
-
-Execute the `batch.sh` script to run the additional data prep, training, dev and validation models.  This is all inputs for the final model selection and presentation.  
-
-These are the R scripts:
-  - `modelselect.R` : initial training model searches
-  - `modelselect-globe.R` : separate by geography
-  - `modelselect-valid.R` : Africa + ME data validations
-  - `modelselect-globe-valid.R` : Global data validations
-  - `modelselect-glmm-covar.R` : GLMM models with covariates
-  - `scoring-cm.R` : Scoring for the training and test data
-  - `scoring-cm-valid.R` : Scoring for the validation data
-
-These create all of the training and validation datasets for the model selection.
-
-## Selecting and Fitting the Forecast Production Model
-
-The forecast model is then summarized in the `FAST-cm.Rmd` which selects and fits the final production model.
-
-1.  Model comparison and selection is summarized in `FAST-cm.*` related files, which are here in all the favorite flavors (`Rmd` for code, and outputs in `pdf` / `html` / `md`).
-2.  Results and forecast summaries are [here](https://github.com/PTB-OEDA/FAST-cm/blob/main/FAST-cm.md#selected-model-negative-binomial-glmm-with-covariates)
-    a.  Spreadsheets summaries by country and month are in the repo as `*.xlsx` files
-    b.  Add the samples
-    c.  add the exceedence / threshold probabilities for `cm`.
-
 ## Acknowledgments
 
 - Support has been provided by [NSF Award 2311142](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2311142).  Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
