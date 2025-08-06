@@ -1,0 +1,343 @@
+---
+title: "FAST Models for 'cm'"
+author: "Patrick T. Brandt\n"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+html-math-method:
+  method: mathjax
+  url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+  github_document:
+    toc: true
+    toc_depth: 2
+  html_document:
+    toc: yes
+    toc_float: yes
+    toc_depth: 2
+    collapsed: no
+    smooth_scroll: yes
+    df_print: kable
+description: Data and model specification documentation for ViEWS forecasts
+bibliography: Forecast.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Model Options and Choices
+
+For the FAST analysis of the `cm` version of the VIEWS data, one faces a series of choices in constructing a forecast model.  These are summarized by the following:
+
+1.  *Units*: Are the data units of analysis (forecast units) countries, grid cells or over months or quarters?  In this case the choice is country-months, denoted `cm` units.
+2.  *Models*:  There are a wide variety to consider here and they vary according to broad parameters set out prior.  These include choices of 
+    a. _Functional form_: Does one using fixed effects, mixed marginal effect, or something else?
+    b. _Distribution of the data_: do we assume a (marginal) Poisson, negative binomial, Tweedie, or some zero-inflated likelihood form?
+3.  *Information Sets*:
+    a.  _Covariates_:  This is mainly a choice over the covariates of interest to the sponsor:
+      - Climate
+      - Food security
+      - Demographics
+    b.  _Other conditioning variables or units_: Do only nearest neighbors in spadfe and time matter or should all global data be leveraged (recall we have the `cm` data for the globe, but are scored on data for Africa and the Middle East). Here this will be either `Globe` or `Africa+ME`.
+4.  *Scoring*: what criteria do we use to rank or evaluuate winners and losers?  Options include root mean squared error (RMSE), bias, dispersion, continuous (discrete) rank probability scores (CRPS), etc.    
+5.  *Forecast horizons* How many periods forward are needed in the forecasts?  This is defined by the sponsor in months 3, 6, and 12.
+
+## Initial Model Selection from Training and Validation Splits
+
+A prior set of model selection rounds were conducted.  These build on the datasets and setup described [here](https://github.com/PTB-OEDA/VIEWS-Startup) from May 2025.
+
+Based on these data for the `cm` VIEWS dataset a series of models were fit to constrain and select from the larger set of options above.  *For a RMSE criteria* using data from 2010:1--2022:6 and a validation comparison sample of data from 2022:10-2023:9 the top models are in the following table:
+
+
+```{r read_validate_results, echo=FALSE, cache=TRUE, warning=FALSE}
+# This is the output generated from `scoring-cm-valid.R`
+load("scoring-cm-valid.RData")
+
+# Only keeps the league table object
+rm(list = setdiff(ls(), "valid.league.metrics"))
+
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(magrittr, quietly = TRUE, warn.conflicts = FALSE)
+
+# Subset and select from it
+tmp <- valid.league.metrics %>% filter(in_africa_me=="Yes") %>% arrange(se_mean)
+
+```
+
+```{r table_validate_results, echo=FALSE, rows.print=20}
+# Get top 25 models
+tmp1 <- tmp[1:25,-3]
+colnames(tmp1) <- c("Model", "Information Set", "RMSE", "CRPS", "Brier (>25)")
+knitr::kable(tmp1, digits=c(6,6,6,2,3), caption = "Top 25 Models from Training and Validation (sorted by RMSE)")
+
+```
+
+\medskip
+
+From the prior model searching documented in the scripts in the Appendix, *the chosen models on the RMSE and CRPS criteria are those with negative binomial or Tweedie distribution likelihoods and the inclusion of the specified predictor covariates* (consistent with @Hegreetal2025 and @brandt23:_views).  Note that these results also are better than the VIEWS baseline models of `exactly_zero`, `last_historical` and `conflictology_country12` (for details see @Hegreetal2025). 
+
+Several conclusions come from these results over the model, covariates, information set, and other choices:
+
+- *Tweedie or Negative binomial models makes the most sense.*  Zero inflation models are genreally not as performative in a RMSE, CRPS, or Brier score comparison.
+- *General linear mixed model (GLMM) of unit effects are preferred over fixed effects.*  All of the GLMM model rank above the fixed effects (`FE`) models.
+- *Information set choice favors using the data only from `Africa+ME` in most cases.* There are a few exceptions to this that interact with the model and the covariates, but there is enough of a pattern to lean in this direction.
+
+## Final FAST Model Using Test Split 
+
+For the final selection of forecast models the evaluation is done over a training set of data from 2010:1--2023:6, evaluated over a testing data from 2023:10--2024:9. 
+(Here we have separated out the `COVAR` portion of the earlier presentation into a separate column factor across the proposed specifications)
+
+```{r finaltest, echo=FALSE, cache=FALSE}
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(magrittr, quietly = TRUE, warn.conflicts = FALSE)
+
+# This is based on FinalTest.R 
+load("FinalTest.RData")
+
+# Aggregate fit metrics 
+test.league.metrics <- merge(test.scores, brier[,c(1:4,7)],
+                             by=c("model","infoset", "covariates", "in_africa_me"))
+  
+tmp <- test.league.metrics %>% filter(in_africa_me=="Yes") %>% arrange(se_mean)
+
+# Get top models
+tmp1 <- tmp[,c(1,2,3,14,7,15)]
+colnames(tmp1) <- c("Model", "Information Set", "Covariates",
+                    "RMSE", "CRPS", "Brier (>25)")
+knitr::kable(tmp1, digits=c(6,6,6,1,2,3), caption = "Models from Final Test (sorted by RMSE)")
+
+```
+
+Based on each of the follow criteria, the best models over the full test sample are
+
+- *RMSE*: Negative Binomial GLMM fit to the Africa+ME data _without_ covariates.
+- *CRPS*: Negative Binomial GLMM fit to the Globe data _without_ covariates.
+- *Brier*: Negative Binomial GLMM fit to the Globe data _with_ covariates.
+
+## Selected model: Negative Binomial GLMM with covariates
+
+This shows the code and estimation of the final model, based on the [initial data setup documented here](https://github.com/PTB-OEDA/VIEWS-Startup/blob/main/Brandt-VIEWS2-Demo.md#reading-in-data) and then processed with `setup.R`
+
+```{r finalmodel-cm, echo=TRUE, cache=TRUE, warning=FALSE}
+rm(list=ls())
+load("cm_subsets.RData")
+
+# Only keeps the global dataset
+rm(list = setdiff(ls(), "globe"))
+   
+# Fit the model as in all the earlier setup code and comparisons.
+# Here we just fit the final model selected in the prior section
+library(glmmTMB)
+
+# From the formulas.R script...
+frm.glmm <- as.formula("ged_sb ~ ar1(month_factor + 0|country_id) + 
+                        wdi_sp_dyn_imrt_in + 
+                        wdi_ms_mil_xpnd_gd_zs +
+                        wdi_ms_mil_xpnd_zs +
+                        vdem_v2x_ex_military")
+
+FAST.cm <- glmmTMB(frm.glmm,
+                   family = nbinom1(),
+                   data=globe)
+
+```
+
+### Characterization of Selected Model
+
+Below is a regression table for the fixed effects covariates.  These are presented as odds ratios for the covariates in the model.
+
+```{r, echo=FALSE, warning=FALSE}
+# Format the outputs from the fitted model
+library(broom.mixed, quietly = TRUE, warn.conflicts = FALSE)
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+nb.fixed <- broom.mixed::tidy(FAST.cm, effects = "fixed", exponentiate=TRUE)
+#nb.ranef <- broom.mixed::tidy(FAST.cm, effects = "")
+
+# Make a nice regression table for the fixed effects
+library(huxtable, quietly = TRUE, warn.conflicts = FALSE)
+huxreg(NBGLMM = nb.fixed, statistics=character(0), bold_signif = 0.05)
+
+```
+
+### Covariate effects for the selected model
+
+Same as above, just graphical for the odds ratios:
+
+```{r covariate_explainer, echo=FALSE, fig.align='center', fig.keep='last', fig.cap="Odds ratios for selected covariates in the NBGLMM."}
+
+library(dotwhisker, quietly = TRUE, warn.conflicts = FALSE)
+dw <- dwplot(nb.fixed)
+print(dw+geom_vline(xintercept=1,lty=2))
+```
+
+
+### Average marginal predictions for explanations
+
+This is overly explicit (since there are only 4 fixed effect variables across all the units).  (If more covaraites are added, this should be done with vectorization or functions rather than for each variable.). Note these these are conservative effects since the estimates are the conditional predictions (given the mixed effects for the time-units). For details see [here](https://easystats.github.io/modelbased/articles/mixed_models.html#generalized-linear-mixed-models)
+
+```{r effects, echo=TRUE, fig.keep='last', fig.cap="Average marginal effects for NBGLMM"}
+library(modelbased, quietly = TRUE, warn.conflicts = FALSE)
+imrt_in_effect <- estimate_means(FAST.cm, "wdi_sp_dyn_imrt_in", 
+                                 estimate = "average")
+mil_xpnd_gd_zs_effect <- estimate_means(FAST.cm, "wdi_ms_mil_xpnd_gd_zs", 
+                                        estimate = "average")
+mil_xpnd_zs_effect <- estimate_means(FAST.cm, "wdi_ms_mil_xpnd_zs", 
+                                     estimate = "average")
+vdem_milex_effect <- estimate_means(FAST.cm, "vdem_v2x_ex_military", 
+                                    estimate = "average")
+
+par(mfrow=c(1,2))
+plot(imrt_in_effect)
+#plot(mil_xpnd_gd_zs_effect)
+#plot(mil_xpnd_zs_effect)
+plot(vdem_milex_effect)
+
+```
+
+### Average conditional predictions for explanations over time
+Same as above, but with accounting for the random effects -- smaller effects and possibly messier to interpret,  but more realistic of the decision-maker's pattern.
+
+```{r timed_effects, fig.keep='all'}
+plot(estimate_slopes(FAST.cm, 
+                     trend = "wdi_sp_dyn_imrt_in",
+                     by = "month_factor = seq(480, 540)", 
+                     predict = "conditional"))
+
+plot(estimate_slopes(FAST.cm, 
+                     trend = "wdi_ms_mil_xpnd_gd_zs",
+                     by = "month_factor = seq(480, 540)", 
+                     predict = "conditional"))
+
+plot(estimate_slopes(FAST.cm, 
+                     trend = "vdem_v2x_ex_military", 
+                     by = "month_factor = seq(480, 540)", 
+                     predict = "conditional"))
+
+```
+
+## Predictions
+
+```{r predictions, echo=TRUE}
+source("predictglmm.R")
+
+ds <- FAST.cm$frame
+
+# Get last 12 months of data
+dim(ds[as.numeric(ds$month_factor)>(max(as.numeric(ds$month_factor))-12),])
+xforcs <- ds[as.numeric(ds$month_factor)>(max(as.numeric(ds$month_factor))-12),]
+
+# Set the month_factor variable and then the covariates by country to match
+# the grouping in the GLMM
+
+xnew <- aggregate(xforcs[,4:7], by=list(xforcs$country_id), mean)
+names(xnew)[1] <- "country_id"
+
+# Make new country-month ids
+idxs <- expand.grid(xnew$country_id, 550:561)
+colnames(idxs) <- c("country_id", "month_id")
+
+xout <- merge(idxs, xnew, by="country_id")
+xout$month_factor <- as.factor(xout$month_id)
+xout$ged_sb <- NA
+
+set.seed(324)
+forcs <- predictglmm(FAST.cm, newdata = xout, N=1000)
+
+```
+
+## Forecast Summaries
+
+This shows how to generate and label the forecast summaries from the forecast sample (`N=1000`). 
+
+```{r forecastsummaries}
+
+# Get country labels for any formatting below -- use latest
+countrylabels <- globe[globe$month_id==max(globe$month_id),
+                       c("country_id", "name", "isoname", "isoab", "isonum", "gwcode")]
+
+# Mean Forecast for each country-month
+mean.forcs <- forcs %>% group_by(country_id, month_id) %>% 
+  summarise(total = mean(predicted))
+
+# Add labels to mean forecasts
+mean.forcs <- merge(mean.forcs, countrylabels[,c(1,2,4)], by="country_id")
+names(mean.forcs)[3] <- "predicted"
+
+# Add dates to mean forecasts
+forc.idx <- data.frame(month_id = 550:561, 
+                       dates=seq(as.Date("2025-10-01"), by="month", length=12))
+
+mean.forcs <- merge(mean.forcs, forc.idx, by="month_id")
+
+# Generate cumulative mean forecasts for each country 
+# over the 12 months of performance
+
+cum.mean.forcs <-  mean.forcs %>% group_by(country_id) %>% 
+  mutate(cumulative_predicted = cumsum(predicted)) %>% arrange(country_id, month_id)
+
+# Write the results out into a spreadsheet
+library(writexl)
+write_xlsx(x = list("Forecasts" = cum.mean.forcs),
+           path = "FAST-cm-Forecasts.xlsx")
+
+```
+
+## Characterization of cumulative forecasts
+
+Where are the highest cumulative forecasts in month 3 (December 2025)?
+```{r echo=FALSE}
+knitr::kable(tail(cum.mean.forcs %>% 
+                    filter(month_id==552) %>%
+                    arrange(cumulative_predicted), 20),
+             caption = "Highest predicted forecasts, December 2025")
+
+```
+
+Where are the highest cumulative forecasts in month 6 (March 2026)?
+
+```{r echo=FALSE}
+knitr::kable(tail(cum.mean.forcs %>% 
+                    filter(month_id==555) %>%
+                    arrange(cumulative_predicted), 20),
+             caption = "Highest predicted forecasts, March 2026")
+
+```
+
+Where are the highest cumulative forecasts in month 12 (September 2026)?
+
+```{r echo=FALSE}
+knitr::kable(tail(cum.mean.forcs %>% 
+                    filter(month_id==561) %>%
+                    arrange(cumulative_predicted), 20),
+             caption = "Highest predicted forecasts, September 2026")
+
+```
+\newpage
+## Appendix
+
+The initial model runs to do preliminary model selection and specification searches are all run via a set of batch scripts included with this repo.  These are run in the following sequence via the `batch.sh` bash shell script to invoke `R` and the code files designated.
+
+````{verbatim}
+#! bash
+
+# Training models
+R CMD BATCH setup.R
+R CMD BATCH modelselect.R &
+R CMD BATCH modelselect-globe.R
+
+# Validation models
+R CMD BATCH modelselect-valid.R &
+R CMD BATCH modelselect-globe-valid.R
+
+R CMD BATCH modelselect-glmm-covar.R
+
+# Scoring across the sets
+R CMD BATCH scoring-cm.R
+R CMD BATCH scoring-cm-valid.R
+
+````
+
+
+## References
