@@ -15,10 +15,13 @@ This repo develops the training-test-dev for the `cm` models.  It shows
 
 ## Basic setup for the analysis here
 
-1.  Run the startup repo to get the data.  That is all documented [here.](https://github.com/PTB-OEDA/VIEWS-Startup). This gets you all the data downloaded and setup for analysis.
+1.  Run the startup repo to get the data.  That is all documented [here](https://github.com/PTB-OEDA/VIEWS-Startup). This gets you all the data downloaded and setup for analysis.
 2.  Execute the `batch.sh` script to run the additional data prep, training, dev and validation models.  This is all inputs for the final model selection and presentation.
 3.  Model comparison and selection is summarized in `FAST-cm.*` related files, which are here in all the favorite flavors (`Rmd` for code, and `pdf` / `html` / `md`)
 4.  Results and forecast summaries are in the files ...
+    a.  Spreadsheets are summaries via...
+    b.  Add the samples
+    c.  add the exceedence / threshold probabilities for `cm`.
 
 ## Acknowledgments
 
