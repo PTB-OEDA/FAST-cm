@@ -57,13 +57,13 @@ Overall, the interim steps generate over 2GB of simulated forecasts and data sub
 Execute the `batch.sh` script to run the additional data prep, training, dev and validation models.  This is all inputs for the final model selection and presentation.  
 
 These are the R scripts:
-  - `modelselect.R`
-  - `modelselect-globe.R`
-  - `modelselect-valid.R`
-  - `modelselect-globe-valid.R`
-  - `modelselect-glmm-covar.R`
-  - `scoring-cm.R` 
-  - `scoring-cm-valid.R`
+  - `modelselect.R` : initial training model searches
+  - `modelselect-globe.R` : separate by geography
+  - `modelselect-valid.R` : Africa + ME data validations
+  - `modelselect-globe-valid.R` : Global data validations
+  - `modelselect-glmm-covar.R` : GLMM models with covariates
+  - `scoring-cm.R` : Scoring for the training and test data
+  - `scoring-cm-valid.R` : Scoring for the validation data
 
 These create all of the training and validation datasets for the model selection.
 
