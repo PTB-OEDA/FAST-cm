@@ -17,7 +17,6 @@ This repo develops the training-test-dev for the `cm` models.  It shows
 
 1.  Run the startup repo to get the data as documented [here](https://github.com/PTB-OEDA/VIEWS-Startup). This gets you all the data downloaded and setup for analysis.
 2.  Run the `setup.R` script.
-<<<<<<< HEAD
 
 This will give you the datasets in `cm_subsets.RData`.  This is then the main input to what follows since it defines dataframes for the Globe and Africa and the Middle East over the time periods.
 
@@ -48,9 +47,7 @@ The forecast model is then summarized in the `FAST-cm.Rmd` which selects and fit
     a.  Spreadsheets summaries by country and month are in the repo as `*.xlsx` files
     b.  Add the samples as a dataframe and output (TBD)
     c.  Add the exceedence / threshold probabilities for `cm` (e.g. Pr(events) > 25)
-=======
 
-This will give you the datasets in `cm_subsets.RData`.  This is then the main input to what follows since it defines dataframes for the Globe and Africa and the Middle East over the time periods.
 
 One needs to execute the files in this repo to be able to fully generate the forecasts in the last step.  
 Overall, the interim steps generate over 2GB of simulated forecasts and data subsets of for the training and evaluation steps.  
