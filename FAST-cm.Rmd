@@ -167,7 +167,7 @@ huxreg(NBGLMM = nb.fixed, statistics=character(0), bold_signif = 0.05)
 
 Same as above, just graphical for the odds ratios:
 
-```{r covariate_explainer, echo=FALSE, fig.align='center', fig.keep='last', fig.cap="Odds ratios for selected covariates in the NBGLMM."}
+```{r covariate_explainer, echo=FALSE, fig.align='center', message=FALSE, fig.keep='last', fig.cap="Odds ratios for selected covariates in the NBGLMM."}
 
 library(dotwhisker, quietly = TRUE, warn.conflicts = FALSE)
 dw <- dwplot(nb.fixed)

@@ -221,13 +221,6 @@ Column names: names, NBGLMM
 
 Same as above, just graphical for the odds ratios:
 
-    ## 
-    ## Attaching package: 'ggplot2'
-
-    ## The following object is masked from 'package:huxtable':
-    ## 
-    ##     theme_grey
-
 <div class="figure" style="text-align: center">
 
 <img src="FAST-cm_files/figure-gfm/covariate_explainer-1.png" alt="Odds ratios for selected covariates in the NBGLMM."  />
