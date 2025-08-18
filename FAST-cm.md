@@ -2,7 +2,7 @@ FAST Models for ‘cm’
 ================
 Patrick T. Brandt
 
-August 06, 2025
+August 18, 2025
 
 - [Model Options and Choices](#model-options-and-choices)
 - [Initial Model Selection from Training and Validation
@@ -15,7 +15,7 @@ August 06, 2025
 - [Forecast Summaries](#forecast-summaries)
 - [Generate the cumulative forecast count
   distributions](#generate-the-cumulative-forecast-count-distributions)
-- [Write out some results](#write-out-some-results)
+- [Write out results](#write-out-results)
 - [Characterization of cumulative
   forecasts](#characterization-of-cumulative-forecasts)
 - [Appendix](#appendix)
@@ -399,7 +399,7 @@ names(pover25)[3] <- "Pr(Cum>25)"
 rm(tmp)
 ```
 
-## Write out some results
+## Write out results
 
 ``` r
 # Merge the mean, cumulative mean, and Pr(Cumulative>25)
@@ -410,6 +410,22 @@ out <- merge(as.data.frame(cum.mean.forcs),
 library(writexl)
 write_xlsx(x = list("Forecasts" = out),
            path = "FAST-cm-Forecasts.xlsx")
+
+# Format for Section 4.1 of the requirements doc
+# These are the column names used 
+# country_id : Country ID
+# month_id : time horizon where 1 = January 1980
+# outcome_n : predicted fatalities
+# outcome_p : predicted probability of > 25 events
+# cumulative_outcome_n : predicted cumulative fatalties
+
+names(out)[2] <- "outcome_n"
+names(out)[8] <- "outcome_p"
+names(out)[7] <- "cumulative_outcome_n"
+
+# Write the parquet file
+library(arrow, quietly = TRUE)
+write_parquet(out, "FAST-Forecast.parquet")
 
 # Save the forecast sample
 save(forcs, file = "ForecastSample.RData")
