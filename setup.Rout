@@ -139,7 +139,8 @@ Type 'q()' to quit R.
 +                  "month_id", "Month","Year", "date")
 > 
 > # demographic covars
-> demo.covars <- c("wdi_sp_dyn_le00_in",                          
+> demo.covars <- c("wdi_sp_pop_totl",
++                  "wdi_sp_dyn_le00_in",                          
 +                  "wdi_sp_dyn_imrt_in",
 +                  "wdi_sh_dyn_mort_fe",
 +                  "wdi_sp_pop_0014_fe_zs",
@@ -213,10 +214,12 @@ Type 'q()' to quit R.
 > # Test, predictors: input predictors for July 2022 - June 2023
 > # Test, DV: Oct 2023 (s=1), Sep 2024 (s=12)
 > globe.test <- globe[globe$date<ISOdate(year=2023, month=7,day=1),]
-> globe.test.eval <- globe[globe$date<ISOdate(year=2024, month=10, day=1),]
+> globe.test.eval <- globe[globe$date>ISOdate(year=2023, month=9,day=1) & 
++                            globe$date<ISOdate(year=2024, month=10, day=1),]
 > 
 > africa_me.test <- africa_me[africa_me$date<ISOdate(year=2023, month=7,day=1),]
-> africa_me.test.eval <- africa_me[africa_me$date<ISOdate(year=2024, month=10, day=1),]
+> africa_me.test.eval <- africa_me[africa_me$date>ISOdate(2023, month=9, day=1) & 
++                                    africa_me$date<ISOdate(year=2024, month=10, day=1),]
 > 
 > ### Save Image of Datasets ###
 > save.image("cm_subsets.RData")
@@ -224,4 +227,4 @@ Type 'q()' to quit R.
 > q(save="no")
 > proc.time()
    user  system elapsed 
-  1.985   0.178   2.636 
+  1.794   0.185   2.572 

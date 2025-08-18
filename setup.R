@@ -120,7 +120,8 @@ geotime.ids <- c("name", "gwcode", "isoname", "isoab", "isonum",  # countryids
                  "month_id", "Month","Year", "date")
 
 # demographic covars
-demo.covars <- c("wdi_sp_dyn_le00_in",                          
+demo.covars <- c("wdi_sp_pop_totl",
+                 "wdi_sp_dyn_le00_in",                          
                  "wdi_sp_dyn_imrt_in",
                  "wdi_sh_dyn_mort_fe",
                  "wdi_sp_pop_0014_fe_zs",
