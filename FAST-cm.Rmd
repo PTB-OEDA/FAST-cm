@@ -179,7 +179,7 @@ print(dw+geom_vline(xintercept=1,lty=2))
 
 This is overly explicit (since there are only 4 fixed effect variables across all the units).  (If more covaraites are added, this should be done with vectorization or functions rather than for each variable.). Note these these are conservative effects since the estimates are the conditional predictions (given the mixed effects for the time-units). For details see [here](https://easystats.github.io/modelbased/articles/mixed_models.html#generalized-linear-mixed-models)
 
-```{r effects, echo=TRUE, fig.keep='last', fig.cap="Average marginal effects for NBGLMM"}
+```{r effects, echo=TRUE, cache=FALSE, fig.keep='last', fig.cap="Average marginal effects for NBGLMM"}
 library(modelbased, quietly = TRUE, warn.conflicts = FALSE)
 imrt_in_effect <- estimate_means(FAST.cm, "wdi_sp_dyn_imrt_in", 
                                  estimate = "average")
@@ -190,11 +190,13 @@ mil_xpnd_zs_effect <- estimate_means(FAST.cm, "wdi_ms_mil_xpnd_zs",
 vdem_milex_effect <- estimate_means(FAST.cm, "vdem_v2x_ex_military", 
                                     estimate = "average")
 
-par(mfrow=c(1,2))
-plot(imrt_in_effect)
-#plot(mil_xpnd_gd_zs_effect)
-#plot(mil_xpnd_zs_effect)
-plot(vdem_milex_effect)
+# library(see)
+# 
+# par(mfrow=c(1,2))
+# plot(imrt_in_effect)
+# #plot(mil_xpnd_gd_zs_effect)
+# #plot(mil_xpnd_zs_effect)
+# plot(vdem_milex_effect)
 
 ```
 

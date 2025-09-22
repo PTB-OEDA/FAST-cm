@@ -2,7 +2,7 @@ FAST Models for ‘cm’
 ================
 Patrick T. Brandt
 
-August 18, 2025
+September 19, 2025
 
 - [Model Options and Choices](#model-options-and-choices)
 - [Initial Model Selection from Training and Validation
@@ -221,6 +221,14 @@ Column names: names, NBGLMM
 
 Same as above, just graphical for the odds ratios:
 
+    ## Warning: Using the `size` aesthetic with geom_segment was deprecated in ggplot2 3.4.0.
+    ## ℹ Please use the `linewidth` aesthetic instead.
+    ## ℹ The deprecated feature was likely used in the dotwhisker package.
+    ##   Please report the issue at <https://github.com/fsolt/dotwhisker/issues>.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
 <div class="figure" style="text-align: center">
 
 <img src="FAST-cm_files/figure-gfm/covariate_explainer-1.png" alt="Odds ratios for selected covariates in the NBGLMM."  />
@@ -252,19 +260,14 @@ mil_xpnd_zs_effect <- estimate_means(FAST.cm, "wdi_ms_mil_xpnd_zs",
 vdem_milex_effect <- estimate_means(FAST.cm, "vdem_v2x_ex_military", 
                                     estimate = "average")
 
-par(mfrow=c(1,2))
-plot(imrt_in_effect)
-#plot(mil_xpnd_gd_zs_effect)
-#plot(mil_xpnd_zs_effect)
-plot(vdem_milex_effect)
+# library(see)
+# 
+# par(mfrow=c(1,2))
+# plot(imrt_in_effect)
+# #plot(mil_xpnd_gd_zs_effect)
+# #plot(mil_xpnd_zs_effect)
+# plot(vdem_milex_effect)
 ```
-
-<figure>
-<img src="FAST-cm_files/figure-gfm/effects-1.png"
-alt="Average marginal effects for NBGLMM" />
-<figcaption aria-hidden="true">Average marginal effects for
-NBGLMM</figcaption>
-</figure>
 
 ### Average conditional predictions for explanations over time
 
@@ -387,22 +390,26 @@ of forecasts. (It is a classic case of wanting an expectation of a
 relevant function not a function of the expectation.)
 
 ``` r
-tmp <- forcs %>% group_by(country_id, month_id, sample_id) %>% summarise(cp = cumsum(predicted)>25) 
+tmp <- forcs %>% group_by(country_id, month_id, sample_id) %>% summarise(cp = predicted>=25) 
 
-pover25 <- tmp %>% group_by(country_id, month_id) %>%
-  summarise(mean(cp))
+pover25 <- tmp %>% group_by(country_id, month_id) %>% summarise(mean(cp))
 
+# Merge on the labels for the predictions
 pover25 <- merge(pover25, countrylabels[,c(1,2,4)],
                  by="country_id")
+
+# Reformat the dates
 pover25 <- merge(pover25, forc.idx, by="month_id")
-names(pover25)[3] <- "Pr(Cum>25)"
+
+# Name the variable
+names(pover25)[3] <- "Pr(>=25)"
 rm(tmp)
 ```
 
 ## Write out results
 
 ``` r
-# Merge the mean, cumulative mean, and Pr(Cumulative>25)
+# Merge the mean, cumulative mean, and Pr(>=25)
 out <- merge(as.data.frame(cum.mean.forcs),
              pover25[,1:3], by = c("country_id", "month_id"))
 
@@ -416,7 +423,7 @@ write_xlsx(x = list("Forecasts" = out),
 # country_id : Country ID
 # month_id : time horizon where 1 = January 1980
 # outcome_n : predicted fatalities
-# outcome_p : predicted probability of > 25 events
+# outcome_p : predicted probability of >= 25 events
 # cumulative_outcome_n : predicted cumulative fatalties
 
 names(out)[2] <- "outcome_n"
@@ -438,25 +445,25 @@ Where are the highest cumulative forecasts in month 3 (December 2025)?
 | month_id | country_id | predicted | name | isoab | dates | cumulative_predicted |
 |---:|---:|---:|:---|:---|:---|---:|
 | 552 | 60 | 23.976 | Iraq | IRQ | 2025-12-01 | 76.288 |
-| 552 | 28 | 27.046 | Colombia | COL | 2025-12-01 | 86.761 |
-| 552 | 223 | 31.381 | India | IND | 2025-12-01 | 99.274 |
+| 552 | 28 | 27.045 | Colombia | COL | 2025-12-01 | 86.760 |
+| 552 | 223 | 31.422 | India | IND | 2025-12-01 | 99.277 |
 | 552 | 50 | 42.118 | Mali | MLI | 2025-12-01 | 130.975 |
 | 552 | 47 | 44.760 | Burkina Faso | BFA | 2025-12-01 | 139.144 |
-| 552 | 167 | 50.134 | Congo, DRC | COD | 2025-12-01 | 156.375 |
-| 552 | 133 | 51.644 | Afghanistan | AFG | 2025-12-01 | 162.024 |
-| 552 | 124 | 55.306 | Yemen | YEM | 2025-12-01 | 177.412 |
-| 552 | 57 | 97.453 | Ethiopia | ETH | 2025-12-01 | 311.661 |
-| 552 | 94 | 108.962 | Lebanon | LBN | 2025-12-01 | 346.904 |
-| 552 | 79 | 113.313 | Nigeria | NGA | 2025-12-01 | 355.057 |
-| 552 | 120 | 124.280 | Somalia | SOM | 2025-12-01 | 394.969 |
-| 552 | 149 | 135.042 | Myanmar | MMR | 2025-12-01 | 433.907 |
-| 552 | 78 | 140.505 | Niger | NER | 2025-12-01 | 442.857 |
-| 552 | 136 | 201.261 | Pakistan | PAK | 2025-12-01 | 649.905 |
-| 552 | 220 | 404.222 | Syria | SYR | 2025-12-01 | 1310.042 |
-| 552 | 245 | 419.866 | Sudan | SDN | 2025-12-01 | 1346.092 |
-| 552 | 65 | 1134.935 | Russia | RUS | 2025-12-01 | 3645.834 |
-| 552 | 218 | 1430.816 | Israel | ISR | 2025-12-01 | 4621.767 |
-| 552 | 117 | 4221.503 | Ukraine | UKR | 2025-12-01 | 13989.559 |
+| 552 | 167 | 50.166 | Congo, DRC | COD | 2025-12-01 | 156.395 |
+| 552 | 133 | 51.605 | Afghanistan | AFG | 2025-12-01 | 162.016 |
+| 552 | 124 | 55.310 | Yemen | YEM | 2025-12-01 | 177.361 |
+| 552 | 57 | 97.453 | Ethiopia | ETH | 2025-12-01 | 311.660 |
+| 552 | 94 | 108.931 | Lebanon | LBN | 2025-12-01 | 346.833 |
+| 552 | 79 | 113.313 | Nigeria | NGA | 2025-12-01 | 355.044 |
+| 552 | 120 | 124.301 | Somalia | SOM | 2025-12-01 | 395.079 |
+| 552 | 149 | 135.038 | Myanmar | MMR | 2025-12-01 | 433.809 |
+| 552 | 78 | 140.505 | Niger | NER | 2025-12-01 | 442.856 |
+| 552 | 136 | 201.401 | Pakistan | PAK | 2025-12-01 | 649.582 |
+| 552 | 220 | 403.837 | Syria | SYR | 2025-12-01 | 1309.823 |
+| 552 | 245 | 419.545 | Sudan | SDN | 2025-12-01 | 1345.934 |
+| 552 | 65 | 1135.079 | Russia | RUS | 2025-12-01 | 3645.963 |
+| 552 | 218 | 1429.833 | Israel | ISR | 2025-12-01 | 4620.691 |
+| 552 | 117 | 4219.961 | Ukraine | UKR | 2025-12-01 | 13967.746 |
 
 Highest predicted forecasts, December 2025
 
@@ -465,25 +472,25 @@ Where are the highest cumulative forecasts in month 6 (March 2026)?
 | month_id | country_id | predicted | name | isoab | dates | cumulative_predicted |
 |---:|---:|---:|:---|:---|:---|---:|
 | 555 | 60 | 20.855 | Iraq | IRQ | 2026-03-01 | 141.876 |
-| 555 | 28 | 22.990 | Colombia | COL | 2026-03-01 | 159.972 |
-| 555 | 223 | 26.421 | India | IND | 2026-03-01 | 183.883 |
+| 555 | 28 | 22.990 | Colombia | COL | 2026-03-01 | 159.970 |
+| 555 | 223 | 26.384 | India | IND | 2026-03-01 | 183.966 |
 | 555 | 50 | 36.796 | Mali | MLI | 2026-03-01 | 246.151 |
 | 555 | 47 | 38.910 | Burkina Faso | BFA | 2026-03-01 | 261.926 |
-| 555 | 167 | 41.619 | Congo, DRC | COD | 2026-03-01 | 290.458 |
-| 555 | 133 | 43.822 | Afghanistan | AFG | 2026-03-01 | 299.896 |
-| 555 | 124 | 47.978 | Yemen | YEM | 2026-03-01 | 330.458 |
-| 555 | 57 | 82.864 | Ethiopia | ETH | 2026-03-01 | 573.976 |
-| 555 | 94 | 88.274 | Lebanon | LBN | 2026-03-01 | 629.624 |
-| 555 | 79 | 95.708 | Nigeria | NGA | 2026-03-01 | 657.576 |
-| 555 | 120 | 106.397 | Somalia | SOM | 2026-03-01 | 731.356 |
-| 555 | 149 | 114.197 | Myanmar | MMR | 2026-03-01 | 799.304 |
-| 555 | 78 | 121.191 | Niger | NER | 2026-03-01 | 824.930 |
-| 555 | 136 | 172.344 | Pakistan | PAK | 2026-03-01 | 1200.532 |
-| 555 | 220 | 325.003 | Syria | SYR | 2026-03-01 | 2361.893 |
-| 555 | 245 | 347.300 | Sudan | SDN | 2026-03-01 | 2465.633 |
-| 555 | 65 | 886.321 | Russia | RUS | 2026-03-01 | 6543.786 |
-| 555 | 218 | 1110.128 | Israel | ISR | 2026-03-01 | 8252.646 |
-| 555 | 117 | 3270.033 | Ukraine | UKR | 2026-03-01 | 24787.770 |
+| 555 | 167 | 41.691 | Congo, DRC | COD | 2026-03-01 | 290.585 |
+| 555 | 133 | 43.805 | Afghanistan | AFG | 2026-03-01 | 299.869 |
+| 555 | 124 | 48.000 | Yemen | YEM | 2026-03-01 | 330.408 |
+| 555 | 57 | 82.863 | Ethiopia | ETH | 2026-03-01 | 573.972 |
+| 555 | 94 | 88.259 | Lebanon | LBN | 2026-03-01 | 629.648 |
+| 555 | 79 | 95.754 | Nigeria | NGA | 2026-03-01 | 657.620 |
+| 555 | 120 | 106.362 | Somalia | SOM | 2026-03-01 | 731.160 |
+| 555 | 149 | 114.199 | Myanmar | MMR | 2026-03-01 | 799.392 |
+| 555 | 78 | 121.190 | Niger | NER | 2026-03-01 | 824.928 |
+| 555 | 136 | 172.597 | Pakistan | PAK | 2026-03-01 | 1200.544 |
+| 555 | 220 | 325.003 | Syria | SYR | 2026-03-01 | 2361.712 |
+| 555 | 245 | 347.526 | Sudan | SDN | 2026-03-01 | 2466.757 |
+| 555 | 65 | 886.308 | Russia | RUS | 2026-03-01 | 6542.965 |
+| 555 | 218 | 1107.455 | Israel | ISR | 2026-03-01 | 8248.622 |
+| 555 | 117 | 3273.550 | Ukraine | UKR | 2026-03-01 | 24747.797 |
 
 Highest predicted forecasts, March 2026
 
@@ -491,26 +498,26 @@ Where are the highest cumulative forecasts in month 12 (September 2026)?
 
 | month_id | country_id | predicted | name | isoab | dates | cumulative_predicted |
 |---:|---:|---:|:---|:---|:---|---:|
-| 561 | 60 | 14.498 | Iraq | IRQ | 2026-09-01 | 242.840 |
-| 561 | 28 | 16.024 | Colombia | COL | 2026-09-01 | 272.278 |
-| 561 | 223 | 19.325 | India | IND | 2026-09-01 | 315.778 |
-| 561 | 50 | 28.113 | Mali | MLI | 2026-09-01 | 435.411 |
-| 561 | 47 | 29.835 | Burkina Faso | BFA | 2026-09-01 | 460.277 |
-| 561 | 167 | 31.664 | Congo, DRC | COD | 2026-09-01 | 506.547 |
-| 561 | 133 | 32.250 | Afghanistan | AFG | 2026-09-01 | 518.771 |
-| 561 | 124 | 35.119 | Yemen | YEM | 2026-09-01 | 571.852 |
-| 561 | 57 | 57.613 | Ethiopia | ETH | 2026-09-01 | 974.440 |
-| 561 | 94 | 59.697 | Lebanon | LBN | 2026-09-01 | 1054.750 |
-| 561 | 79 | 69.790 | Nigeria | NGA | 2026-09-01 | 1133.800 |
-| 561 | 120 | 77.027 | Somalia | SOM | 2026-09-01 | 1262.953 |
-| 561 | 149 | 80.004 | Myanmar | MMR | 2026-09-01 | 1359.696 |
-| 561 | 78 | 90.383 | Niger | NER | 2026-09-01 | 1435.959 |
-| 561 | 136 | 123.335 | Pakistan | PAK | 2026-09-01 | 2060.828 |
-| 561 | 220 | 217.047 | Syria | SYR | 2026-09-01 | 3922.442 |
-| 561 | 245 | 241.879 | Sudan | SDN | 2026-09-01 | 4159.521 |
-| 561 | 65 | 557.141 | Russia | RUS | 2026-09-01 | 10670.510 |
-| 561 | 218 | 705.735 | Israel | ISR | 2026-09-01 | 13398.871 |
-| 561 | 117 | 2006.682 | Ukraine | UKR | 2026-09-01 | 39761.365 |
+| 561 | 60 | 14.498 | Iraq | IRQ | 2026-09-01 | 242.839 |
+| 561 | 28 | 16.024 | Colombia | COL | 2026-09-01 | 272.274 |
+| 561 | 223 | 19.304 | India | IND | 2026-09-01 | 315.851 |
+| 561 | 50 | 28.113 | Mali | MLI | 2026-09-01 | 435.410 |
+| 561 | 47 | 29.834 | Burkina Faso | BFA | 2026-09-01 | 460.273 |
+| 561 | 167 | 31.653 | Congo, DRC | COD | 2026-09-01 | 506.638 |
+| 561 | 133 | 32.287 | Afghanistan | AFG | 2026-09-01 | 518.730 |
+| 561 | 124 | 35.121 | Yemen | YEM | 2026-09-01 | 571.740 |
+| 561 | 57 | 57.613 | Ethiopia | ETH | 2026-09-01 | 974.427 |
+| 561 | 94 | 59.702 | Lebanon | LBN | 2026-09-01 | 1054.763 |
+| 561 | 79 | 69.804 | Nigeria | NGA | 2026-09-01 | 1133.914 |
+| 561 | 120 | 77.117 | Somalia | SOM | 2026-09-01 | 1262.901 |
+| 561 | 149 | 79.906 | Myanmar | MMR | 2026-09-01 | 1359.746 |
+| 561 | 78 | 90.383 | Niger | NER | 2026-09-01 | 1435.954 |
+| 561 | 136 | 123.329 | Pakistan | PAK | 2026-09-01 | 2060.886 |
+| 561 | 220 | 217.043 | Syria | SYR | 2026-09-01 | 3921.626 |
+| 561 | 245 | 242.000 | Sudan | SDN | 2026-09-01 | 4159.363 |
+| 561 | 65 | 556.799 | Russia | RUS | 2026-09-01 | 10667.788 |
+| 561 | 218 | 705.374 | Israel | ISR | 2026-09-01 | 13392.843 |
+| 561 | 117 | 2010.234 | Ukraine | UKR | 2026-09-01 | 39704.008 |
 
 Highest predicted forecasts, September 2026
 
