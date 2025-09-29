@@ -6,6 +6,7 @@
 #            Builds off the 'Brandt-VIEWS2-Demo.Rmd' from the Startup repo
 #            and the 'FAST-cm.Rmd' 
 #            See those files for details and comments.
+# 20250929 : Update column names and subsets
 #
 # This version is just about processing the final forecast training data
 # into the competition forecasts for September 2025 delivery
@@ -17,7 +18,9 @@ library(tidyr)
 library(statmod)
 library(tweedie)
 library(magrittr)
+library(dplyr)
 library(glmmTMB)
+
 
 #### Read Data ####
 
@@ -191,8 +194,7 @@ countrylabels <- globe[globe$month_id==max(globe$month_id),
                          "isoab", "isonum", "gwcode")]
 
 # Mean forecast for each country-month
-mean.forcs <- forcs %>% group_by(country_id, month_id) %>%
-  summarise(total = mean(predicted))
+mean.forcs <- forcs %>% group_by(country_id, month_id) %>% summarize(total = mean(predicted))
 
 # Add labels to mean forecasts
 mean.forcs <- merge(mean.forcs, countrylabels[,c(1,2,4)],
@@ -254,7 +256,8 @@ write_xlsx(x = list("Forecasts" = out),
 # outcome_p : predicted probability of > 25 events
 # cumulative_outcome_n : predicted cumulative fatalties
 
-names(out)[2] <- "outcome_n"
+names(out)[2] <- "month_id"
+names(out)[3] <- "outcome_n"
 names(out)[8] <- "outcome_p"
 names(out)[7] <- "cumulative_outcome_n"
 
